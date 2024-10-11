@@ -18,6 +18,7 @@ public class Main {
 
         System.out.println("Weather API Console App");
         String location = "";
+        String action = "";
 
         while(true){
             Scanner in = new Scanner(System.in);
@@ -27,15 +28,46 @@ public class Main {
                 break;
             }
 
-            try{
-                Response<CurrentResponse> weatherResponse = api.weather(key, location).execute();
-                System.out.println("In " + weatherResponse.body().getLocation().name +
-                        " - Temperature is " + weatherResponse.body().getCurrent().getTemp_c() +
-                        " and it feels like " + weatherResponse.body().getCurrent().getFeelslike_c());
-            }catch (Exception e){
+            Response<CurrentResponse> weatherResponse = api.weather(key, location).execute();
+
+            if(!weatherResponse.isSuccessful()) {
                 System.out.println("wrong input");
+                continue;
             }
 
+            System.out.println("Action (GET, PUT, DELETE, CREATE):");
+            action = in.next().toLowerCase();
+            System.out.println("Action: " + action.toUpperCase());
+
+
+            if(action.equals("get")){           //GET --------------
+                System.out.println(weatherResponse);
+                System.out.println("In " + weatherResponse.body().getLocation().getName() +
+                        " region " + weatherResponse.body().getLocation().getRegion() +
+                        " - Temperature is " + weatherResponse.body().getCurrent().getTemp_c() +
+                        " and it feels like " + weatherResponse.body().getCurrent().getFeelslike_c());
+
+            }else if (action.equals("put")){    //PUT ---------------
+                CurrentResponse regionChange = new CurrentResponse();
+                Location newLocation = weatherResponse.body().getLocation();
+                newLocation.setRegion("Bebria");
+                regionChange.setLocation(newLocation);
+                CurrentResponse currentResponsePut = api.putRegion(key, location, regionChange).execute().body();
+                System.out.println("Region now - " + weatherResponse.body().getLocation().getRegion());
+            }else if(action.equals("delete")){
+                Integer code = api.delete(key, location).execute().code();
+                System.out.println("Code:"+code);
+            }else if(action.equals("create")){
+                CurrentResponse createResponse = new CurrentResponse();
+                Location newLocation = weatherResponse.body().getLocation();
+                newLocation.setCountry("Created country");
+                createResponse.setLocation(newLocation);
+                CurrentResponse currentResponseCreate = api.create(key, location, createResponse).execute().body();
+                Integer code = api.create(key, location, createResponse).execute().code();
+                System.out.println("Status:" + currentResponseCreate.getLocation().getCountry() + " " + code);
+            }else{
+                    System.out.println("Invalid action");
+            }
 
         }
 
